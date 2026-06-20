@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sistema de Encomendas de Uniformes - Marinha do Brasil</title>
+<link rel="stylesheet" href="style.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+  <div class="gov-bar">BRASIL · Marinha do Brasil · Sistema Oficial</div>
+
+  <header class="main-header">
+    <div class="container header-inner">
+      <div class="logo">⚓</div>
+      <div>
+        <h1>Sistema de Encomendas de Uniformes</h1>
+        <div class="subtitle">Marinha do Brasil</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="steps-nav">
+    <div class="container steps-inner" id="stepsNav">
+      <div class="step" data-step="1"><span>1</span> Militar</div>
+      <div class="step" data-step="2"><span>2</span> Catálogo</div>
+      <div class="step" data-step="3"><span>3</span> Carrinho</div>
+      <div class="step" data-step="4"><span>4</span> Pagamento</div>
+      <div class="step" data-step="5"><span>5</span> Resumo</div>
+      <div class="step" data-step="6"><span>6</span> Concluído</div>
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="card">
+
+      <!-- STEP 1 -->
+      <section id="step1" class="step-section">
+        <h2>1. Identificação do Militar</h2>
+        <p class="muted">Preencha seus dados para iniciar a encomenda.</p>
+        <div class="grid-2">
+          <div class="field"><label>Nome Completo *</label><input id="m_nome" /></div>
+          <div class="field"><label>NIP *</label><input id="m_nip" placeholder="Ex: 12.3456.78" /></div>
+          <div class="field">
+            <label>Posto / Graduação *</label>
+            <select id="m_posto">
+              <option value="">Selecione...</option>
+              <option>Almirante</option><option>Vice-Almirante</option><option>Contra-Almirante</option>
+              <option>Capitão-de-Mar-e-Guerra</option><option>Capitão-de-Fragata</option><option>Capitão-de-Corveta</option>
+              <option>Capitão-Tenente</option><option>Primeiro-Tenente</option><option>Segundo-Tenente</option>
+              <option>Guarda-Marinha</option><option>Suboficial</option><option>Primeiro-Sargento</option>
+              <option>Segundo-Sargento</option><option>Terceiro-Sargento</option><option>Cabo</option><option>Marinheiro</option>
+            </select>
+          </div>
+          <div class="field"><label>Organização Militar (OM) *</label><input id="m_om" placeholder="Ex: CIASC" /></div>
+        </div>
+        <div class="actions right"><button class="btn btn-primary" onclick="validarMilitar()">Continuar →</button></div>
+      </section>
+
+      <!-- STEP 2 -->
+      <section id="step2" class="step-section hidden">
+        <h2>2. Catálogo de Uniformes</h2>
+        <input id="busca" placeholder="Buscar item ou categoria..." class="search" oninput="renderCatalogo()" />
+        <div id="catalogo" class="catalog-grid"></div>
+        <div class="actions space">
+          <button class="btn btn-secondary" onclick="goStep(1)">← Voltar</button>
+          <button class="btn btn-primary" onclick="goStep(3)">Ver carrinho (<span id="cartCount">0</span>) →</button>
+        </div>
+      </section>
+
+      <!-- STEP 3 -->
+      <section id="step3" class="step-section hidden">
+        <h2>3. Carrinho</h2>
+        <div id="carrinhoContainer"></div>
+        <div class="actions space">
+          <button class="btn btn-secondary" onclick="goStep(2)">← Catálogo</button>
+          <button class="btn btn-primary" onclick="irPagamento()">Pagamento →</button>
+        </div>
+      </section>
+
+      <!-- STEP 4 -->
+      <section id="step4" class="step-section hidden">
+        <h2>4. Forma de Pagamento</h2>
+        <p>Total: <b id="pagTotal" class="total-label"></b></p>
+        <div id="pagOpcoes"></div>
+        <div id="parcelasBox" class="hidden">
+          <div class="field"><label>Parcelas</label><select id="parcelas"></select></div>
+        </div>
+        <div class="actions space">
+          <button class="btn btn-secondary" onclick="goStep(3)">← Voltar</button>
+          <button class="btn btn-primary" onclick="validarPagamento()">Revisar →</button>
+        </div>
+      </section>
+
+      <!-- STEP 5 -->
+      <section id="step5" class="step-section hidden">
+        <h2>5. Resumo do Pedido</h2>
+        <div id="resumoBox"></div>
+        <div class="actions space">
+          <button class="btn btn-secondary" onclick="goStep(4)">← Voltar</button>
+          <button class="btn btn-success" onclick="confirmar()">✓ Confirmar e gerar PDF</button>
+        </div>
+      </section>
+
+      <!-- STEP 6 -->
+      <section id="step6" class="step-section hidden">
+        <div class="success">
+          <div class="check">✓</div>
+          <h2>Pedido confirmado!</h2>
+          <p>Protocolo: <b id="protoLabel" class="proto"></b></p>
+          <p class="aviso">⏰ Compareça em até <b>7 dias</b> para retirada dos itens.</p>
+          <div class="actions center">
+            <button class="btn btn-secondary" onclick="gerarPDF()">📄 Baixar PDF novamente</button>
+            <button class="btn btn-primary" onclick="resetar()">Nova encomenda</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <footer>© Marinha do Brasil · Sistema de Encomendas de Uniformes</footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
