@@ -1,0 +1,78 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Arial, Helvetica, sans-serif; background: #f5f5f0; color: #222; }
+.hidden { display: none !important; }
+.container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+.gov-bar { background: #1351b4; color: #fff; padding: 6px 20px; font-size: 12px; }
+
+.main-header { background: linear-gradient(90deg,#002147,#003875); color: #fff; padding: 18px 0; }
+.header-inner { display: flex; align-items: center; gap: 16px; }
+.logo { width: 56px; height: 56px; background: #fff; color: #002147; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; }
+.main-header h1 { margin: 0; font-size: 22px; }
+.subtitle { font-size: 13px; opacity: .85; }
+
+.steps-nav { background: #fff; border-bottom: 1px solid #ddd; }
+.steps-inner { display: flex; padding: 12px 24px; gap: 8px; flex-wrap: wrap; }
+.step { display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 20px;
+        background: #e0e0e0; color: #666; font-size: 13px; font-weight: 600; }
+.step span { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,255,255,.4);
+             display: flex; align-items: center; justify-content: center; font-size: 12px; }
+.step.active { background: #002147; color: #fff; }
+.step.done { background: #4caf50; color: #fff; }
+
+main { padding: 20px 24px; }
+.card { background: #fff; padding: 28px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+h2 { margin-top: 0; color: #002147; }
+.muted { color: #666; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 600px){ .grid-2 { grid-template-columns: 1fr; } }
+.field label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; }
+.field input, .field select, .search, select, input[type=text], input[type=number] {
+  width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;
+}
+.search { margin-bottom: 16px; }
+
+.actions { margin-top: 24px; display: flex; gap: 12px; }
+.actions.right { justify-content: flex-end; }
+.actions.space { justify-content: space-between; }
+.actions.center { justify-content: center; }
+
+.btn { border: none; padding: 10px 22px; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600; }
+.btn-primary { background: #002147; color: #fff; }
+.btn-secondary { background: #e0e0e0; color: #333; }
+.btn-success { background: #1e7e34; color: #fff; }
+.btn-danger { background: #c0392b; color: #fff; padding: 4px 10px; font-size: 12px; }
+
+.catalog-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(240px,1fr)); gap: 16px; }
+.cat-card { border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; }
+.cat-card .cat { font-size: 11px; color: #666; text-transform: uppercase; }
+.cat-card .nome { font-weight: 600; margin: 4px 0 8px; color: #002147; }
+.cat-card .preco { font-size: 18px; color: #1e7e34; font-weight: bold; margin-bottom: 10px; }
+.cat-card select { margin-bottom: 8px; }
+.cat-card button { width: 100%; padding: 8px; }
+
+table { width: 100%; border-collapse: collapse; }
+th { background: #f0f0f0; padding: 10px; text-align: left; font-size: 13px; color: #002147; }
+td { padding: 10px; font-size: 14px; border-bottom: 1px solid #eee; }
+td input[type=number] { width: 60px; padding: 4px; }
+.total-row td { font-weight: bold; font-size: 16px; color: #002147; }
+.total-label { color: #002147; font-size: 18px; }
+
+.pag-opt { display: block; padding: 14px; border: 1px solid #ddd; border-radius: 6px;
+           margin-bottom: 10px; cursor: pointer; }
+.pag-opt.selected { border: 2px solid #002147; background: #f0f5fc; }
+.pag-opt small { display: block; color: #666; margin-left: 22px; }
+
+#resumoBox .resumo-card { background: #f9f9f7; padding: 16px; border-radius: 6px; margin-bottom: 16px; }
+#resumoBox h3 { margin: 0 0 8px; color: #002147; }
+#resumoBox .linha { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted #ddd; }
+#resumoBox .total { margin-top: 10px; font-size: 18px; font-weight: bold; text-align: right; color: #002147; }
+
+.success { text-align: center; padding: 30px; }
+.check { font-size: 64px; color: #1e7e34; }
+.proto { font-size: 20px; color: #002147; }
+.aviso { background: #fff3cd; padding: 12px; border-radius: 6px; color: #856404; display: inline-block; }
+
+footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
