@@ -7,6 +7,7 @@
 const SUPABASE_URL  = "https://gxapixqmexpybbwrqnxt.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4YXBpeHFtZXhweWJid3Jxbnh0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxMDk5NjksImV4cCI6MjA5MTY4NTk2OX0.d-_ViDZxZ2EkqfVCU3pMkkjT6HtiSeFr4ibQrRu10sU";
 
+// ===== Helper REST Supabase =====
 async function sbGet(table, params = "") {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}${params}`, {
     headers: {
@@ -14,7 +15,7 @@ async function sbGet(table, params = "") {
       Authorization: `Bearer ${SUPABASE_ANON}`,
     },
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(`[${table}] ${res.status}: ${await res.text()}`);
   return res.json();
 }
 
@@ -29,8 +30,14 @@ async function sbPost(table, body) {
     },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(await res.text());
+  if (!res.ok) throw new Error(`[${table}] ${res.status}: ${await res.text()}`);
   return res.json();
+}
+
+// Busca o próximo ID disponível (MAX + 1) para tabelas com PK INTEGER sem auto-incremento
+async function nextId(table, pkCol) {
+  const rows = await sbGet(table, `?select=${pkCol}&order=${pkCol}.desc&limit=1`);
+  return rows.length > 0 ? rows[0][pkCol] + 1 : 1;
 }
 
 // ===== Catálogo (carregado do Supabase) =====
@@ -38,10 +45,10 @@ let CATALOGO = [];
 
 async function carregarCatalogo() {
   try {
-    CATALOGO = await sbGet("item_uniforme", "?order=categoria,nome");
+    CATALOGO = await sbGet("item_uniforme", "?order=nome");
   } catch (e) {
     console.error("Erro ao carregar catálogo:", e);
-    alert("Não foi possível carregar o catálogo. Verifique a conexão com o banco de dados.");
+    alert("Não foi possível carregar o catálogo.\n\nDetalhe: " + e.message);
   }
 }
 
@@ -52,7 +59,7 @@ let carrinho = [];
 let pagamento = { forma: "", parcelas: 1 };
 let protocolo = "";
 
-const fmt = v => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const fmt = v => Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const total = () => carrinho.reduce((s, i) => s + i.preco * i.quantidade, 0);
 
 // ===== Navegação =====
@@ -75,10 +82,10 @@ function goStep(n) {
 // ===== Step 1 =====
 function validarMilitar() {
   militar = {
-    nome: document.getElementById("m_nome").value.trim(),
-    nip: document.getElementById("m_nip").value.trim(),
+    nome:  document.getElementById("m_nome").value.trim(),
+    nip:   document.getElementById("m_nip").value.trim(),
     posto: document.getElementById("m_posto").value,
-    om: document.getElementById("m_om").value.trim(),
+    om:    document.getElementById("m_om").value.trim(),
   };
   if (!militar.nome || !militar.nip || !militar.posto || !militar.om) {
     alert("Preencha todos os campos obrigatórios."); return;
@@ -93,27 +100,29 @@ function renderCatalogo() {
     return;
   }
   const busca = (document.getElementById("busca").value || "").toLowerCase();
-  const lista = CATALOGO.filter(i =>
-    i.nome.toLowerCase().includes(busca) || i.categoria.toLowerCase().includes(busca)
-  );
+  const lista = CATALOGO.filter(i => i.nome.toLowerCase().includes(busca));
+
+  // item_uniforme não tem coluna de tamanhos — campo livre para o usuário digitar
   const html = lista.map(i => `
     <div class="cat-card">
-      <div class="cat">${i.categoria}</div>
       <div class="nome">${i.nome}</div>
-      <div class="preco">${fmt(Number(i.preco))}</div>
-      <select id="tam_${i.id}">${i.tamanhos.map(t => `<option>${t}</option>`).join("")}</select>
-      <button class="btn btn-primary" onclick="addCart(${i.id})">+ Adicionar</button>
+      ${i.descricao ? `<div class="cat">${i.descricao}</div>` : ""}
+      <div class="preco">${fmt(i.preco_unitario)}</div>
+      <input type="text" id="tam_${i.id_item}" placeholder="Tamanho (ex: M, 42...)" style="margin-bottom:6px" />
+      <button class="btn btn-primary" onclick="addCart(${i.id_item})">+ Adicionar</button>
     </div>`).join("");
-  document.getElementById("catalogo").innerHTML = html || "<p>Nenhum item.</p>";
+  document.getElementById("catalogo").innerHTML = html || "<p>Nenhum item encontrado.</p>";
   document.getElementById("cartCount").textContent = carrinho.length;
 }
 
 function addCart(id) {
-  const item = CATALOGO.find(i => i.id === id);
-  const tam = document.getElementById("tam_" + id).value;
+  const item = CATALOGO.find(i => i.id_item === id);
+  const tamInput = document.getElementById("tam_" + id);
+  const tam = tamInput.value.trim();
+  if (!tam) { alert("Informe o tamanho antes de adicionar."); tamInput.focus(); return; }
   const existe = carrinho.find(c => c.id === id && c.tamanho === tam);
   if (existe) existe.quantidade++;
-  else carrinho.push({ id, nome: item.nome, tamanho: tam, preco: Number(item.preco), quantidade: 1 });
+  else carrinho.push({ id, nome: item.nome, tamanho: tam, preco: Number(item.preco_unitario), quantidade: 1 });
   document.getElementById("cartCount").textContent = carrinho.length;
   alert(item.nome + " (" + tam + ") adicionado!");
 }
@@ -150,9 +159,9 @@ function irPagamento() {
 function renderPagamento() {
   document.getElementById("pagTotal").textContent = fmt(total());
   const opts = [
-    { f: "Credifarda", d: "Desconto em folha" },
-    { f: "Nota OM", d: "Faturamento via Organização Militar" },
-    { f: "Particular", d: "Mínimo R$ 30,00 por parcela · até 10x" },
+    { f: "Credifarda",  d: "Desconto em folha" },
+    { f: "Nota OM",     d: "Faturamento via Organização Militar" },
+    { f: "Particular",  d: "Mínimo R$ 30,00 por parcela · até 10x" },
   ];
   document.getElementById("pagOpcoes").innerHTML = opts.map(o => `
     <label class="pag-opt ${pagamento.forma === o.f ? "selected" : ""}">
@@ -202,55 +211,62 @@ function renderResumo() {
 
 // ===== Confirmar e salvar no Supabase =====
 async function confirmar() {
-  const btnConfirmar = document.querySelector("#step5 .btn-success");
-  btnConfirmar.disabled = true;
-  btnConfirmar.textContent = "Salvando...";
+  const btn = document.querySelector("#step5 .btn-success");
+  btn.disabled = true;
+  btn.textContent = "Salvando...";
 
   try {
     protocolo = "MB" + Date.now().toString().slice(-8);
+    const agora = new Date().toISOString();
+    const prazo = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
-    // 1. Verificar se o militar já existe pelo NIP
-    let militarId;
-    const militaresExistentes = await sbGet("militar", `?nip=eq.${encodeURIComponent(militar.nip)}&select=id`);
-    if (militaresExistentes.length > 0) {
-      militarId = militaresExistentes[0].id;
-    } else {
-      // Inserir novo militar
-      const [novoMilitar] = await sbPost("militar", {
-        nome: militar.nome,
-        nip: militar.nip,
-        posto: militar.posto,
-        om: militar.om,
+    // 1. Inserir ou ignorar militar (PK = nip)
+    const militaresExistentes = await sbGet("militar", `?nip=eq.${encodeURIComponent(militar.nip)}&select=nip`);
+    if (militaresExistentes.length === 0) {
+      await sbPost("militar", {
+        nip:                militar.nip,
+        nome_completo:      militar.nome,
+        posto_graduacao:    militar.posto,
+        organizacao_militar: militar.om,
       });
-      militarId = novoMilitar.id;
     }
 
-    // 2. Criar a encomenda
-    const [novaEncomenda] = await sbPost("encomenda", {
-      protocolo,
-      militar_id: militarId,
-      total: total(),
+    // 2. Criar encomenda
+    const idEncomenda = await nextId("encomenda", "id_encomenda");
+    await sbPost("encomenda", {
+      id_encomenda:     idEncomenda,
+      nip:              militar.nip,
+      status:           "Confirmada",
+      data_criacao:     agora,
+      data_confirmacao: agora,
+      prazo_retirada:   prazo,
+      valor_total:      total(),
     });
-    const encomendaId = novaEncomenda.id;
 
-    // 3. Inserir os itens da encomenda
-    await sbPost("item_encomenda", carrinho.map(c => ({
-      encomenda_id: encomendaId,
-      item_uniforme_id: c.id,
-      nome: c.nome,
-      tamanho: c.tamanho,
-      quantidade: c.quantidade,
-      preco_unitario: c.preco,
-    })));
+    // 3. Criar itens da encomenda
+    let idItemEncomenda = await nextId("item_encomenda", "id_item_encomenda");
+    const itensSalvar = carrinho.map(c => ({
+      id_item_encomenda: idItemEncomenda++,
+      id_encomenda:      idEncomenda,
+      id_item:           c.id,
+      tamanho:           c.tamanho,
+      quantidade:        c.quantidade,
+      valor_unitario:    c.preco,
+      valor_parcial:     c.preco * c.quantidade,
+    }));
+    await sbPost("item_encomenda", itensSalvar);
 
-    // 4. Inserir o pagamento
+    // 4. Criar pagamento
+    const idPagamento = await nextId("pagamento", "id_pagamento");
     await sbPost("pagamento", {
-      encomenda_id: encomendaId,
-      forma: pagamento.forma,
-      parcelas: pagamento.parcelas,
+      id_pagamento:    idPagamento,
+      id_encomenda:    idEncomenda,
+      forma_pagamento: pagamento.forma,
+      num_parcelas:    pagamento.parcelas,
+      valor_parcela:   pagamento.forma === "Particular" ? total() / pagamento.parcelas : null,
     });
 
-    // 5. Gerar PDF e avançar
+    // 5. Avançar
     gerarPDF();
     document.getElementById("protoLabel").textContent = protocolo;
     goStep(6);
@@ -258,8 +274,8 @@ async function confirmar() {
   } catch (err) {
     console.error("Erro ao salvar pedido:", err);
     alert("Erro ao salvar o pedido no banco de dados.\n\nDetalhe: " + err.message);
-    btnConfirmar.disabled = false;
-    btnConfirmar.textContent = "✓ Confirmar e gerar PDF";
+    btn.disabled = false;
+    btn.textContent = "✓ Confirmar e gerar PDF";
   }
 }
 
@@ -304,10 +320,8 @@ function gerarPDF() {
 
   y += 4; doc.setFontSize(11);
   doc.text(`TOTAL: ${fmt(total())}`, 196, y, { align: "right" });
-
   y += 12; doc.setFontSize(10);
   doc.text(`Forma de Pagamento: ${pagamento.forma}${pagamento.forma === "Particular" ? ` em ${pagamento.parcelas}x` : ""}`, 14, y);
-
   y += 12; doc.setFontSize(9); doc.setTextColor(150, 0, 0);
   doc.text("IMPORTANTE: Comparecer em até 7 dias para retirada dos itens.", 14, y);
 
